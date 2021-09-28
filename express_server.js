@@ -7,12 +7,13 @@ app.set("view engine", "ejs")
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
+//Create a shortened url
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL;
   //console.log(req.body);  // Log the POST request body to the console
-  res.redirect(`/urls/${shortURL}`);         // Respond with 'Ok' (we will replace this)
+  res.redirect(`/urls/${shortURL}`);         // Redirect 
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -44,11 +45,19 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+//delete a url
+app.post("/urls/:shortURL/delete", (req, res) => {
+  const shortURL = req.params.shortURL;
+  delete urlDatabase[shortURL];
+  res.redirect('/urls');
+});
+
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-
+//RNG for creating a new url
 function generateRandomString() {
   let outputString = ''
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
