@@ -4,16 +4,22 @@ const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs")
 
+//database
+const urlDatabase = {
+  "b2xVn2": "http://www.lighthouselabs.ca",
+  "9sm5xK": "http://www.google.com"
+};
+
+//middleware
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
-//Create a shortened url
+//Create a shortened URL and redirects to a page showing the new URL
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL;
-  //console.log(req.body);  // Log the POST request body to the console
-  res.redirect(`/urls/${shortURL}`);         // Redirect 
+  res.redirect(`/urls/${shortURL}`);       
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -21,14 +27,12 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-};
+
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
+
 
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
@@ -51,6 +55,14 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[shortURL];
   res.redirect('/urls');
 });
+
+//update a long URL
+app.post("/urls/:id", (req,res) => {
+  const id = req.params.id;
+  urlDatabase[id] = req.body.quoteContent;
+  res.redirect("/urls");
+});
+
 
 
 app.listen(PORT, () => {
