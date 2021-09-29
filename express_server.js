@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
+const cookieParser = require("cookie-parser");
 
 app.set("view engine", "ejs")
 
@@ -13,6 +14,13 @@ const urlDatabase = {
 //middleware
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
+
+//allow user to login 
+app.post("/login", (req, res) => {
+  const user = req.body.username
+  res.cookie('username', user)
+  res.redirect("/urls")
+})
 
 //Create a shortened URL and redirects to a page showing the new URL
 app.post("/urls", (req, res) => {
