@@ -68,14 +68,17 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 //allow user to login 
-// Endpoint for the user to signin. Setting a cookie named username.
 app.post("/login", (req, res) => {
   const user = req.body.username;
   res.cookie('username', user);
   res.redirect("/urls");
 });
 
-
+//log user out
+app.post("/logout", (req, res) => {
+  res.clearCookie('username');
+  res.redirect("/urls");
+})
 
 //RNG for creating a new url
 function generateRandomString() {
