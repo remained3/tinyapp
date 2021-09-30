@@ -33,7 +33,7 @@ const findUser = function (email, users) {
   for (let userID in users) {
     const user = users[userID];
     if (email === user.email) {
-      return true
+      return user;
     }
   } return false;
 }
@@ -57,61 +57,52 @@ const authentication = function (email, password, users) {
   return false;
 }
 
-//RNG for creating a new url
-function generateRandomString() {
-  let outputString = ''
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
-  for (let i = 0; i < 6; i++) {
-    outputString += characters.charAt(Math.floor(Math.random() * characters.length));
-   }
-   return outputString;
+
+const urlForUser = (user_id, database) => {
+  const userURL = {};
+  for (let record in database) {
+    if (database[record].userID === user_id) {
+      userURL[record] = database[record];
+    }
+  }
+  return userURL;
+  
 }
 
 
 
-//registration page, redirects if already a user
+
 app.get("/register", (req, res) => {
   
   const templateVars = { 
     user: users[req.cookies["user_id"]]
   };
-  if (templateVars.user) {
-    res.redirect("/urls")
-  }
   res.render("register", templateVars);
 });
 
-//login page, redirects if already logged in
 app.get("/login", (req, res) => {
   const templateVars = { 
     user: users[req.cookies["user_id"]]
   };
-  if (templateVars.user) {
-    res.redirect("/urls")
-  }
   res.render("login", templateVars);
 });
 
-
-
-//registers new users
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
   //check fields have been completed
   if (!email || !password) {
-    res.status(400).send("Error (400): email and password fields cannot be empty.")
+    res.status(400);
+    res.send("Error (400): email and password fields cannot be empty.")
     return;
   }
 
-  //checks if already registered
   const userFound = findUser(email, users);
   if (userFound) {
     res.status(400).send('Sorry, that email has already been registered');
     return;
   }
-  //adds new user to the users database, assigns a cookie
   const userID = newUser(email, password, users);
   res.cookie('user_id', userID);
   res.redirect('/urls')
@@ -119,21 +110,28 @@ app.post("/register", (req, res) => {
 
 //Create a shortened URL and redirects to a page showing the new URL
 app.post("/urls", (req, res) => {
-  const templateVars = { 
-    user: users[req.cookies["user_id"]]
-  };
-  if (templateVars.user) {
+  const user = users[req.cookies["user_id"]];
+  if(!user) {
+    res.redirect("/register");
+    return;
+  }
   const shortURL = generateRandomString();
+  urlDatabase[shortURL] = {
+  longURL: req.body.longURL,
+  userID: user.id
+}
+  res.redirect(`/urls/${shortURL}`);       
+});
+
+//update url
+app.post("/urls/:shortURL", (req, res) => {
   const longURL = req.body.longURL;
-  urlDatabase[shortURL] = longURL;
-  res.redirect(`/urls/${shortURL}`);
-  } else {
-    res.send("Error: Only registered users can create a shortened URL")
-  }       
+  urlDatabase[req.params.shortURL].longURL = longURL;
+  res.redirect("/urls");
 });
 
 app.get("/url/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
 });
 
@@ -148,29 +146,51 @@ app.get("/urls/new", (req, res) => {
   const templateVars = { 
     user: users[req.cookies["user_id"]]
   };
-  if (templateVars.user) {
-    res.render("urls_new", templateVars);
-  } else {
-    res.redirect("/login")
-  }
+  res.render("urls_new", templateVars);
 });
 
 app.get("/urls", (req, res) => {
+  const user = users[req.cookies["user_id"]]
+  if (!user) {
+    res.send("You must log in to see URLs")
+  }
+  const userURL = urlForUser(user.id, urlDatabase)
   const templateVars = { 
-    urls: urlDatabase,
-    user: users[req.cookies["user_id"]]
+    urls: userURL,
+    user,
    };
   res.render("urls_index", templateVars);
 });
 
 
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { 
-    shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL],
-    user: users[req.cookies["user_id"]]
+  const user = users[req.cookies["user_id"]];
+  const shortURL = req.params.shortURL;
+  if (!user) {
+    res.redirect("/login");
+  }
+  const forOwner = urlForUser(user.id, urlDatabase);
+  if (!forOwner[shortURL]) {
+    res.send("Links can only be updated by the creator");
+    return;
+  }
+  const longURL = urlDatabase[shortURL].longURL;
+  const templateVars = {
+    shortURL,
+    longURL,
+    user
   };
   res.render("urls_show", templateVars);
+});
+
+//redirect user to the long url website
+app.get("/u/:shortURL", (req, res) => {
+  if (urlDatabase[req.params.shortURL]) {
+    res.redirect(urlDatabase[req.params.shortURL].longURL);
+    
+  } else {
+    res.send("This link does not exisit");
+  }
 });
 
 //delete a url
@@ -201,11 +221,17 @@ app.post("/logout", (req, res) => {
   res.redirect("/urls");
 })
 
+//RNG for creating a new url
+function generateRandomString() {
+  let outputString = ''
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
+  for (let i = 0; i < 6; i++) {
+    outputString += characters.charAt(Math.floor(Math.random() * characters.length));
+   }
+   return outputString;
+}
 
 //makes server listen
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
-
-
