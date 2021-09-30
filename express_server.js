@@ -27,13 +27,57 @@ const users = {
   }
 }
 
+//Helper functions for registration/ authentication
 
-app.get("/registration", (req, res) => {
+const findUser = function (email, users) {
+  for (let userID in users) {
+    const user = users[userID];
+    if (email === user.email) {
+      return true
+    }
+  } return false;
+}
+
+const newUser = function (email, password, users) {
+  const userID = generateRandomString()
+  
+  users[userID] = {
+    id: userID,
+    email,
+    password,
+  };
+  return userID
+}
+
+app.get("/register", (req, res) => {
   const templateVars = { 
     username: req.cookies["username"]
   };
-  res.render("registration", templateVars);
+  res.render("register", templateVars);
 });
+
+
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  //check fields have been completed
+  if (email === "" || password === "") {
+    res.status(400);
+    res.send("Error (400): email and password fields cannot be empty.")
+    return;
+  }
+
+  const userFound = findUser(email, users);
+  if (userFound) {
+    res.status(400).send('Sorry, that email has already been registered');
+    return;
+  }
+  const userID = newUser(email, password, users);
+  res.cookie('user_id', userID);
+  res.redirect('/urls')
+});
+
 //Create a shortened URL and redirects to a page showing the new URL
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
