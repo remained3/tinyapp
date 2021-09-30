@@ -57,7 +57,19 @@ const authentication = function (email, password, users) {
   return false;
 }
 
+//RNG for creating a new url
+function generateRandomString() {
+  let outputString = ''
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
+  for (let i = 0; i < 6; i++) {
+    outputString += characters.charAt(Math.floor(Math.random() * characters.length));
+   }
+   return outputString;
+}
 
+
+
+//registration page, redirects if already a user
 app.get("/register", (req, res) => {
   
   const templateVars = { 
@@ -69,6 +81,7 @@ app.get("/register", (req, res) => {
   res.render("register", templateVars);
 });
 
+//login page, redirects if already logged in
 app.get("/login", (req, res) => {
   const templateVars = { 
     user: users[req.cookies["user_id"]]
@@ -79,22 +92,26 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
+
+
+//registers new users
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
   //check fields have been completed
   if (!email || !password) {
-    res.status(400);
-    res.send("Error (400): email and password fields cannot be empty.")
+    res.status(400).send("Error (400): email and password fields cannot be empty.")
     return;
   }
 
+  //checks if already registered
   const userFound = findUser(email, users);
   if (userFound) {
     res.status(400).send('Sorry, that email has already been registered');
     return;
   }
+  //adds new user to the users database, assigns a cookie
   const userID = newUser(email, password, users);
   res.cookie('user_id', userID);
   res.redirect('/urls')
@@ -102,10 +119,17 @@ app.post("/register", (req, res) => {
 
 //Create a shortened URL and redirects to a page showing the new URL
 app.post("/urls", (req, res) => {
+  const templateVars = { 
+    user: users[req.cookies["user_id"]]
+  };
+  if (templateVars.user) {
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL;
-  res.redirect(`/urls/${shortURL}`);       
+  res.redirect(`/urls/${shortURL}`);
+  } else {
+    res.send("Error: Only registered users can create a shortened URL")
+  }       
 });
 
 app.get("/url/:shortURL", (req, res) => {
@@ -125,9 +149,10 @@ app.get("/urls/new", (req, res) => {
     user: users[req.cookies["user_id"]]
   };
   if (templateVars.user) {
-    res.redirect("urls_new", templateVars);
-  }
+    res.render("urls_new", templateVars);
+  } else {
     res.redirect("/login")
+  }
 });
 
 app.get("/urls", (req, res) => {
@@ -176,15 +201,6 @@ app.post("/logout", (req, res) => {
   res.redirect("/urls");
 })
 
-//RNG for creating a new url
-function generateRandomString() {
-  let outputString = ''
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
-  for (let i = 0; i < 6; i++) {
-    outputString += characters.charAt(Math.floor(Math.random() * characters.length));
-   }
-   return outputString;
-}
 
 //makes server listen
 app.listen(PORT, () => {
