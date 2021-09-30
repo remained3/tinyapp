@@ -49,6 +49,15 @@ const newUser = function (email, password, users) {
   return userID
 }
 
+const authentication = function (email, password, users) {
+  const userFound = findUser(email, users);
+  if (userFound && userFound.password === password) {
+    return userFound;
+  }
+  return false;
+}
+
+
 app.get("/register", (req, res) => {
   
   const templateVars = { 
@@ -57,13 +66,19 @@ app.get("/register", (req, res) => {
   res.render("register", templateVars);
 });
 
+app.get("/login", (req, res) => {
+  const templateVars = { 
+    user: users[req.cookies["user_id"]]
+  };
+  res.render("login", templateVars);
+});
 
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
   //check fields have been completed
-  if (email === "" || password === "") {
+  if (!email || !password) {
     res.status(400);
     res.send("Error (400): email and password fields cannot be empty.")
     return;
@@ -87,7 +102,7 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);       
 });
 
-app.get("/u/:shortURL", (req, res) => {
+app.get("/url/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
 });
@@ -133,9 +148,17 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 //allow user to login 
 app.post("/login", (req, res) => {
-  const user = req.body.username;
-  res.cookie('username', user);
-  res.redirect("/urls");
+  const email = req.body.email;
+  const password = req.body.password
+
+  const user = authentication(email, password, users);
+  if(user) {
+    res.cookie('user_id', user.id);
+    res.redirect("/urls"); // and redirect user to the /urls
+    return;
+  } else {
+    res.status(403).send("No user with that email address found!");
+  }
 });
 
 //log user out
