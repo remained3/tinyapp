@@ -8,13 +8,32 @@ app.use(cookieParser());
 
 app.set("view engine", "ejs")
 
-//database
+//databases
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+}
 
+
+app.get("/registration", (req, res) => {
+  const templateVars = { 
+    username: req.cookies["username"]
+  };
+  res.render("registration", templateVars);
+});
 //Create a shortened URL and redirects to a page showing the new URL
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
