@@ -111,9 +111,13 @@ app.get("/urls.json", (req, res) => {
 
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = { 
-    user: users[req.cookies["user_id"]]
+  const user = users[req.cookies["user_id"]];
+  const templateVars = {
+    user
   };
+  if (!user) {
+    res.redirect("/login")
+  }
   res.render("urls_new", templateVars);
 });
 
