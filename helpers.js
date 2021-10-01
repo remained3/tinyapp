@@ -1,3 +1,5 @@
+const bcrypt = require("bcryptjs");
+
 const findUser = function(email, users) {
   for (let userID in users) {
     const user = users[userID];
@@ -20,7 +22,7 @@ const newUser = function(email, password, users) {
 
 const authentication = function(email, password, users) {
   const userFound = findUser(email, users);
-  if (userFound && userFound.password === password) {
+  if (userFound && bcrypt.compareSync(userFound.password === password)) {
     return userFound;
   }
   return false;
@@ -35,4 +37,16 @@ const generateRandomString = function() {
   return outputString;
 };
 
-module.exports = { findUser, newUser, authentication, generateRandomString}
+const urlForUser = (user_id, database) => {
+  const userURL = {};
+  for (let record in database) {
+    if (database[record].userID === user_id) {
+      userURL[record] = database[record];
+    }
+  }
+  return userURL;
+  
+}
+
+
+module.exports = { findUser, newUser, authentication, generateRandomString, urlForUser}

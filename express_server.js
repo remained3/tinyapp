@@ -5,6 +5,9 @@ const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
+const bcrypt = require("bcryptjs");
+const salt = bcrypt.genSaltSync(10);
+const { findUser, newUser, authentication, generateRandomString, urlForUser} = require("./helpers")
 
 app.set("view engine", "ejs")
 
@@ -27,50 +30,6 @@ const users = {
   }
 }
 
-//Helper functions for registration/ authentication
-
-const findUser = function (email, users) {
-  for (let userID in users) {
-    const user = users[userID];
-    if (email === user.email) {
-      return user;
-    }
-  } return false;
-}
-
-const newUser = function (email, password, users) {
-  const userID = generateRandomString()
-  
-  users[userID] = {
-    id: userID,
-    email,
-    password,
-  };
-  return userID
-}
-
-const authentication = function (email, password, users) {
-  const userFound = findUser(email, users);
-  if (userFound && userFound.password === password) {
-    return userFound;
-  }
-  return false;
-}
-
-
-const urlForUser = (user_id, database) => {
-  const userURL = {};
-  for (let record in database) {
-    if (database[record].userID === user_id) {
-      userURL[record] = database[record];
-    }
-  }
-  return userURL;
-  
-}
-
-
-
 
 app.get("/register", (req, res) => {
   
@@ -90,6 +49,7 @@ app.get("/login", (req, res) => {
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, salt)
 
   //check fields have been completed
   if (!email || !password) {
@@ -211,25 +171,15 @@ app.post("/login", (req, res) => {
     res.redirect("/urls"); // and redirect user to the /urls
     return;
   } else {
-    res.status(403).send("No user with that email address found!");
+    res.status(401).send("No user with that email address found!");
   }
 });
 
 //log user out
 app.post("/logout", (req, res) => {
   res.clearCookie('user_id');
-  res.redirect("/urls");
+  res.redirect("/login");
 })
-
-//RNG for creating a new url
-function generateRandomString() {
-  let outputString = ''
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
-  for (let i = 0; i < 6; i++) {
-    outputString += characters.charAt(Math.floor(Math.random() * characters.length));
-   }
-   return outputString;
-}
 
 //makes server listen
 app.listen(PORT, () => {
