@@ -1,3 +1,4 @@
+const cookieSession = require('cookie-session');
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
@@ -30,6 +31,13 @@ const users = {
   }
 }
 
+app.get("/", (req, res) => {
+  const user = users[req.cookies["user_id"]]
+  if(!user){
+  res.redirect("login");
+  }
+  res.redirect("/urls")
+});
 
 app.get("/register", (req, res) => {
   
