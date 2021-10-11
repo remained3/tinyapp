@@ -1,6 +1,8 @@
 const bcrypt = require("bcryptjs");
 const salt = bcrypt.genSaltSync(10);
 
+
+
 const findUserByEmail = function(email, users) {
   for (let userID in users) {
     const user = users[userID];
@@ -10,6 +12,7 @@ const findUserByEmail = function(email, users) {
   } return false;
 };
 
+//create a new user
 const newUser = function(email, hashed, users) {
   const userID = generateRandomString();
   users[userID] = {
@@ -20,6 +23,7 @@ const newUser = function(email, hashed, users) {
   return userID;
 };
 
+//check if user is valid
 const authentication = function(email, password, users) {
   const userFound = findUserByEmail(email, users);
   if (userFound && bcrypt.compareSync(password, users[userFound].password)) {
@@ -37,6 +41,7 @@ const generateRandomString = function() {
   return outputString;
 };
 
+//only show urls the user created
 const urlForUser = (user_id, database) => {
   const userURL = {};
   for (let record in database) {
