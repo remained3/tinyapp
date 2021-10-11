@@ -42,7 +42,8 @@ const users = {
   }
 };
 
-//homepage, redirects depending on login status
+
+//get requests
 app.get("/", (req, res) => {
   const userID = users[req.session.user_id];
   if (!userID) {
@@ -73,47 +74,6 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
-app.post("/register", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-  const hashed = bcrypt.hashSync(password, 10);
-
-  //check fields have been completed
-  if (!email || !password) {
-    res.status(400).send("Error (400): email and password fields cannot be empty.");
-    return;
-  }
-  const userFound = findUserByEmail(email, users);
-  if (userFound) {
-    res.status(400).send('Sorry, that email has already been registered');
-    return;
-  }
-  const newUserID = newUser(email, hashed, users);
-  req.session.user_id = users[newUserID].id;
-  res.redirect('/urls');
-});
-
-//Create a shortened URL and redirects to a page showing the new URL
-app.post("/urls", (req, res) => {
-  const userID = users[req.session.user_id];
-  if (!userID) {
-    res.redirect("/register");
-    return;
-  }
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = {
-    longURL: req.body.longURL,
-    userID: userID
-  };
-  res.redirect(`/urls/${shortURL}`);
-});
-
-//update url
-app.post("/urls/:shortURL", (req, res) => {
-  const longURL = req.body.longURL;
-  urlDatabase[req.params.shortURL].longURL = longURL;
-  res.redirect("/urls");
-});
 
 app.get("/url/:shortURL", (req, res) => {
   const longURL = urlDatabase[shortURL].longURL;
@@ -189,7 +149,55 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 
-//delete a url
+//Post requests
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const hashed = bcrypt.hashSync(password, salt);
+
+  if (!email || !password) {
+    res.status(400).send("Error (400): email and password fields cannot be empty.");
+    return;
+  }
+  const userFound = findUserByEmail(email, users);
+  if (userFound) {
+    res.status(400).send('Sorry, that email has already been registered');
+    return;
+  }
+  const newUserID = newUser(email, hashed, users);
+  req.session.user_id = users[newUserID].id;
+  res.redirect('/urls');
+});
+
+//Create a shortened URL and redirects to a page showing the new URL
+app.post("/urls", (req, res) => {
+  const userID = users[req.session.user_id];
+  if (!userID) {
+    res.redirect("/register");
+    return;
+  }
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userID: userID
+  };
+  res.redirect(`/urls/${shortURL}`);
+});
+
+//update url
+app.post("/urls/:shortURL", (req, res) => {
+  const userID = users[req.session.user_id];
+  if (!userID) {
+    res.redirect("/register");
+    return;
+  }
+  const longURL = req.body.longURL;
+  urlDatabase[req.params.shortURL].longURL = longURL;
+  res.redirect("/urls");
+});
+
+
+//delete an owned url
 app.post("/urls/:shortURL/delete", (req, res) => {
   const userID = users[req.session.user_id];
   const shortURL = req.params.shortURL;
@@ -206,7 +214,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls');
 });
 
-//allow user to login
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -214,14 +221,13 @@ app.post("/login", (req, res) => {
   const user = authentication(email, password, users);
   if (user) {
     req.session.user_id = user.id;
-    res.redirect("/urls"); // and redirect user to the /urls
+    res.redirect("/urls");
     return;
   } else {
     res.status(401).send("No user with that email address found!");
   }
 });
 
-//log user out
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/login");
