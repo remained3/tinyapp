@@ -119,6 +119,7 @@ app.post("/logout", (req, res) => {
 
 //url pages
 
+
 app.get("/url/:shortURL", (req, res) => {
   const userID = users[req.session.user_id];
   if (!userID) {
@@ -128,13 +129,7 @@ app.get("/url/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
-
-
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-
+//create a new url
 app.get("/urls/new", (req, res) => {
   const userID = users[req.session.user_id];
   const templateVars = {
@@ -148,6 +143,7 @@ app.get("/urls/new", (req, res) => {
   return;
 });
 
+//all user urls
 app.get("/urls", (req, res) => {
   const userID = users[req.session.user_id];
   if (!userID) {
@@ -162,7 +158,7 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-
+//edit page, only creator can edit
 app.get("/urls/:shortURL", (req, res) => {
   const userID = users[req.session.user_id];
   const shortURL = req.params.shortURL;
@@ -196,7 +192,7 @@ app.get("/u/:shortURL", (req, res) => {
   }
 });
 
-//Create a shortened URL and redirects to a page showing the new URL
+//Create a shortened URL and redirects to a page showing the new URL and edit page
 app.post("/urls", (req, res) => {
   const userID = users[req.session.user_id];
   if (!userID) {
@@ -241,6 +237,10 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls');
 });
 
+
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
+});
 
 //makes server listen
 app.listen(PORT, () => {

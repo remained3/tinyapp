@@ -31,6 +31,7 @@ const authentication = function(email, password, users) {
   return false;
 };
 
+//random string generator to create 6 character code for url
 const generateRandomString = function() {
   let outputString = '';
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890';
