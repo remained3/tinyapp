@@ -43,7 +43,7 @@ const users = {
 };
 
 
-
+//get requests
 app.get("/", (req, res) => {
   const userID = users[req.session.user_id];
   if (!userID) {
@@ -52,9 +52,6 @@ app.get("/", (req, res) => {
   res.redirect("/urls");
 });
 
-
-
-//login & registration
 app.get("/register", (req, res) => {
   const userID = users[req.session.user_id];
   const templateVars = {
@@ -65,25 +62,6 @@ app.get("/register", (req, res) => {
   }
   res.render("register", templateVars);
 });
-
-app.post("/register", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-
-  if (!email || !password) {
-    res.status(400).send("Error (400): email and password fields cannot be empty.");
-    return;
-  }
-  const userFound = findUserByEmail(email, users);
-  if (userFound) {
-    res.status(400).send('Sorry, that email has already been registered');
-    return;
-  }
-  const newUserID = newUser(email, password, users);
-  req.session.user_id = users[newUserID].id;
-  res.redirect('/urls');
-});
-
 
 app.get("/login", (req, res) => {
   const userID = users[req.session.user_id];
@@ -96,30 +74,12 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
-app.post("/login", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-
-  const user = authentication(email, password, users);
-  if (user) {
-    req.session.user_id = user.id;
-    res.redirect("/urls");
-    return;
-  } else {
-    res.status(401).send("No user with that email address found!");
-  }
-});
-
-app.post("/logout", (req, res) => {
-  req.session = null;
-  res.redirect("/login");
-});
-
-
-
-//url pages
 
 app.get("/url/:shortURL", (req, res) => {
+  const userID = users[req.session.user_id];
+  if (!userID) {
+    res.redirect("/login")
+  }
   const longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
 });
@@ -136,12 +96,12 @@ app.get("/urls/new", (req, res) => {
   const templateVars = {
     user: userID
   };
-  if (userID) {
-    res.render("urls_new", templateVars);
+  if (!userID) {
+    res.redirect("/login");
     return;
   }
-  res.redirect("/login");
-  return;
+  res.render("urls_new", templateVars);
+  return;  
 });
 
 app.get("/urls", (req, res) => {
@@ -192,6 +152,27 @@ app.get("/u/:shortURL", (req, res) => {
   }
 });
 
+
+//Post requests
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const hashed = bcrypt.hashSync(password, salt);
+
+  if (!email || !password) {
+    res.status(400).send("Error (400): email and password fields cannot be empty.");
+    return;
+  }
+  const userFound = findUserByEmail(email, users);
+  if (userFound) {
+    res.status(400).send('Sorry, that email has already been registered');
+    return;
+  }
+  const newUserID = newUser(email, hashed, users);
+  req.session.user_id = users[newUserID].id;
+  res.redirect('/urls');
+});
+
 //Create a shortened URL and redirects to a page showing the new URL
 app.post("/urls", (req, res) => {
   const userID = users[req.session.user_id];
@@ -237,6 +218,24 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls');
 });
 
+app.post("/login", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  const user = authentication(email, password, users);
+  if (user) {
+    req.session.user_id = user.id;
+    res.redirect("/urls");
+    return;
+  } else {
+    res.status(401).send("No user with that email address found!");
+  }
+});
+
+app.post("/logout", (req, res) => {
+  req.session = null;
+  res.redirect("/login");
+});
 
 //makes server listen
 app.listen(PORT, () => {
